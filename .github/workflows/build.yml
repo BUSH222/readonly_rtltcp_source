@@ -54,88 +54,61 @@ jobs:
           name: readonly_rtltcp_source_${{ matrix.os }}
           path: ${{runner.workspace}}/build_module/readonly_rtltcp_source.dylib
 
+
+
   build_linux:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-latest
+          - arch: arm64
+            os: ubuntu-24.04-arm
 
-      - name: Ensure SDR++ Core is present
-        run: |
-          if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
-            rm -rf lib/SDRPlusPlus
-            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
-          fi
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk-dev libzstd-dev portaudio19-dev libspdlog-dev
-          
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
-
-      - name: Build SDR++ Core (Minimal)
-        working-directory: ${{runner.workspace}}/build_sdrpp
-        run: |
-          cmake ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_BLADERF_SOURCE=OFF -DOPT_BUILD_FILE_SOURCE=OFF -DOPT_BUILD_FOBOSSDR_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_HAROGIC_SOURCE=OFF -DOPT_BUILD_HERMES_SOURCE=OFF -DOPT_BUILD_KCSDR_SOURCE=OFF -DOPT_BUILD_LIMESDR_SOURCE=OFF -DOPT_BUILD_NETWORK_SOURCE=OFF -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RFNM_SOURCE=OFF -DOPT_BUILD_RFSPACE_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_RTL_TCP_SOURCE=OFF -DOPT_BUILD_SDRPLAY_SOURCE=OFF -DOPT_BUILD_SDRPP_SERVER_SOURCE=OFF -DOPT_BUILD_SOAPY_SOURCE=OFF -DOPT_BUILD_SPECTRAN_SOURCE=OFF -DOPT_BUILD_SPECTRAN_HTTP_SOURCE=OFF -DOPT_BUILD_SPYSERVER_SOURCE=OFF -DOPT_BUILD_USRP_SOURCE=OFF -DOPT_BUILD_ANDROID_AUDIO_SINK=OFF -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_NETWORK_SINK=OFF -DOPT_BUILD_NEW_PORTAUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=OFF -DOPT_BUILD_ATV_DECODER=OFF -DOPT_BUILD_DAB_DECODER=OFF -DOPT_BUILD_FALCON9_DECODER=OFF -DOPT_BUILD_KGSSTV_DECODER=OFF -DOPT_BUILD_M17_DECODER=OFF -DOPT_BUILD_METEOR_DEMODULATOR=OFF -DOPT_BUILD_PAGER_DECODER=OFF -DOPT_BUILD_RADIO=OFF -DOPT_BUILD_VOR_RECEIVER=OFF -DOPT_BUILD_WEATHER_SAT_DECODER=OFF -DOPT_BUILD_DISCORD_PRESENCE=OFF -DOPT_BUILD_FREQUENCY_MANAGER=OFF -DOPT_BUILD_IQ_EXPORTER=OFF -DOPT_BUILD_RECORDER=OFF -DOPT_BUILD_RIGCTL_CLIENT=OFF -DOPT_BUILD_RIGCTL_SERVER=OFF -DOPT_BUILD_SCANNER=OFF -DOPT_BUILD_SCHEDULER=OFF
-          make sdrpp_core -j3
-          sudo make install
-
-      - name: Build the better file source module
-        working-directory: ${{runner.workspace}}/build_module
-        run: |
-          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
-          make -j3
-
-      - name: Save Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: readonly_rtltcp_source_linux_amd64
-          path: ${{runner.workspace}}/build_module/readonly_rtltcp_source.so
-
-  build_linux_arm64:
-    runs-on: ubuntu-24.04-arm
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: Ensure SDR++ Core is present
-        run: |
-          if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
-            rm -rf lib/SDRPlusPlus
-            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
-          fi
-
-      - name: Install Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk-dev libzstd-dev portaudio19-dev libspdlog-dev
-          
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
-
-      - name: Build SDR++ Core (Minimal)
-        working-directory: ${{runner.workspace}}/build_sdrpp
-        run: |
-          cmake ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_BLADERF_SOURCE=OFF -DOPT_BUILD_FILE_SOURCE=OFF -DOPT_BUILD_FOBOSSDR_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_HAROGIC_SOURCE=OFF -DOPT_BUILD_HERMES_SOURCE=OFF -DOPT_BUILD_KCSDR_SOURCE=OFF -DOPT_BUILD_LIMESDR_SOURCE=OFF -DOPT_BUILD_NETWORK_SOURCE=OFF -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RFNM_SOURCE=OFF -DOPT_BUILD_RFSPACE_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_RTL_TCP_SOURCE=OFF -DOPT_BUILD_SDRPLAY_SOURCE=OFF -DOPT_BUILD_SDRPP_SERVER_SOURCE=OFF -DOPT_BUILD_SOAPY_SOURCE=OFF -DOPT_BUILD_SPECTRAN_SOURCE=OFF -DOPT_BUILD_SPECTRAN_HTTP_SOURCE=OFF -DOPT_BUILD_SPYSERVER_SOURCE=OFF -DOPT_BUILD_USRP_SOURCE=OFF -DOPT_BUILD_ANDROID_AUDIO_SINK=OFF -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_NETWORK_SINK=OFF -DOPT_BUILD_NEW_PORTAUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=OFF -DOPT_BUILD_ATV_DECODER=OFF -DOPT_BUILD_DAB_DECODER=OFF -DOPT_BUILD_FALCON9_DECODER=OFF -DOPT_BUILD_KGSSTV_DECODER=OFF -DOPT_BUILD_M17_DECODER=OFF -DOPT_BUILD_METEOR_DEMODULATOR=OFF -DOPT_BUILD_PAGER_DECODER=OFF -DOPT_BUILD_RADIO=OFF -DOPT_BUILD_VOR_RECEIVER=OFF -DOPT_BUILD_WEATHER_SAT_DECODER=OFF -DOPT_BUILD_DISCORD_PRESENCE=OFF -DOPT_BUILD_FREQUENCY_MANAGER=OFF -DOPT_BUILD_IQ_EXPORTER=OFF -DOPT_BUILD_RECORDER=OFF -DOPT_BUILD_RIGCTL_CLIENT=OFF -DOPT_BUILD_RIGCTL_SERVER=OFF -DOPT_BUILD_SCANNER=OFF -DOPT_BUILD_SCHEDULER=OFF
-          make sdrpp_core -j3
-          sudo make install
-
-      - name: Build the better file source module
-        working-directory: ${{runner.workspace}}/build_module
-        run: |
-          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
-          make -j3
-
-      - name: Save Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: readonly_rtltcp_source_linux_arm64
-          path: ${{runner.workspace}}/build_module/readonly_rtltcp_source.so
+    runs-on: ${{ matrix.os }}
   
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Ensure SDR++ Core is present
+        run: |
+          if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
+            rm -rf lib/SDRPlusPlus
+            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
+          fi
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake git libfftw3-dev libglfw3-dev libvolk-dev libzstd-dev portaudio19-dev libspdlog-dev
+          
+      - name: Create Build Environment
+        run: cmake -E make_directory ${{runner.workspace}}/build_sdrpp && cmake -E make_directory ${{runner.workspace}}/build_module
+
+      - name: Build SDR++ Core (Minimal)
+        working-directory: ${{runner.workspace}}/build_sdrpp
+        run: |
+          cmake ${{github.workspace}}/lib/SDRPlusPlus -DOPT_BUILD_AIRSPY_SOURCE=OFF -DOPT_BUILD_AIRSPYHF_SOURCE=OFF -DOPT_BUILD_AUDIO_SOURCE=OFF -DOPT_BUILD_BLADERF_SOURCE=OFF -DOPT_BUILD_FILE_SOURCE=OFF -DOPT_BUILD_FOBOSSDR_SOURCE=OFF -DOPT_BUILD_HACKRF_SOURCE=OFF -DOPT_BUILD_HAROGIC_SOURCE=OFF -DOPT_BUILD_HERMES_SOURCE=OFF -DOPT_BUILD_KCSDR_SOURCE=OFF -DOPT_BUILD_LIMESDR_SOURCE=OFF -DOPT_BUILD_NETWORK_SOURCE=OFF -DOPT_BUILD_PERSEUS_SOURCE=OFF -DOPT_BUILD_PLUTOSDR_SOURCE=OFF -DOPT_BUILD_RFNM_SOURCE=OFF -DOPT_BUILD_RFSPACE_SOURCE=OFF -DOPT_BUILD_RTL_SDR_SOURCE=OFF -DOPT_BUILD_RTL_TCP_SOURCE=OFF -DOPT_BUILD_SDRPLAY_SOURCE=OFF -DOPT_BUILD_SDRPP_SERVER_SOURCE=OFF -DOPT_BUILD_SOAPY_SOURCE=OFF -DOPT_BUILD_SPECTRAN_SOURCE=OFF -DOPT_BUILD_SPECTRAN_HTTP_SOURCE=OFF -DOPT_BUILD_SPYSERVER_SOURCE=OFF -DOPT_BUILD_USRP_SOURCE=OFF -DOPT_BUILD_ANDROID_AUDIO_SINK=OFF -DOPT_BUILD_AUDIO_SINK=OFF -DOPT_BUILD_NETWORK_SINK=OFF -DOPT_BUILD_NEW_PORTAUDIO_SINK=OFF -DOPT_BUILD_PORTAUDIO_SINK=OFF -DOPT_BUILD_ATV_DECODER=OFF -DOPT_BUILD_DAB_DECODER=OFF -DOPT_BUILD_FALCON9_DECODER=OFF -DOPT_BUILD_KGSSTV_DECODER=OFF -DOPT_BUILD_M17_DECODER=OFF -DOPT_BUILD_METEOR_DEMODULATOR=OFF -DOPT_BUILD_PAGER_DECODER=OFF -DOPT_BUILD_RADIO=OFF -DOPT_BUILD_VOR_RECEIVER=OFF -DOPT_BUILD_WEATHER_SAT_DECODER=OFF -DOPT_BUILD_DISCORD_PRESENCE=OFF -DOPT_BUILD_FREQUENCY_MANAGER=OFF -DOPT_BUILD_IQ_EXPORTER=OFF -DOPT_BUILD_RECORDER=OFF -DOPT_BUILD_RIGCTL_CLIENT=OFF -DOPT_BUILD_RIGCTL_SERVER=OFF -DOPT_BUILD_SCANNER=OFF -DOPT_BUILD_SCHEDULER=OFF
+          make sdrpp_core -j3
+          sudo make install
+
+      - name: Build the better file source module
+        working-directory: ${{runner.workspace}}/build_module
+        run: |
+          cmake ${{github.workspace}} -DSDRPP_CORE_ROOT=${{github.workspace}}/lib/SDRPlusPlus "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
+          make -j3
+
+      - name: Save Artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: readonly_rtltcp_source_linux_${{ matrix.arch }}
+          path: ${{runner.workspace}}/build_module/readonly_rtltcp_source.so
+
+
+
+
   update_latest_release:
     needs: [build_macos_universal, build_linux]
     runs-on: ubuntu-latest
