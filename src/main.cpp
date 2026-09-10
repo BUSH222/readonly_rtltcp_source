@@ -74,12 +74,12 @@ public:
         handler.stopHandler = stop;
         handler.tuneHandler = tune;
         handler.stream = &stream;
-        sigpath::sourceManager.registerSource("RTL-TCP", &handler);
+        sigpath::sourceManager.registerSource("Readonly RTL-TCP", &handler);
     }
 
     ~ReadonlyRTLTCPSourceModule() {
         stop(this);
-        sigpath::sourceManager.unregisterSource("RTL-TCP");
+        sigpath::sourceManager.unregisterSource("Readonly RTL-TCP");
     }
 
     void postInit() {}
