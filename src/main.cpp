@@ -60,22 +60,6 @@ public:
             double sr = config.conf["sampleRate"];
             if (samplerates.keyExists(sr)) { srId = samplerates.keyId(sr); }
         }
-        if (config.conf.contains("directSamplingMode")) {
-            int mode = config.conf["directSamplingMode"];
-            if (directSamplingModes.keyExists(mode)) { directSamplingId = directSamplingModes.keyId(mode); }
-        }
-        if (config.conf.contains("ppm")) {
-            ppm = config.conf["ppm"];
-        }
-        if (config.conf.contains("gainIndex")) {
-            gain = config.conf["gainIndex"];
-        }
-        if (config.conf.contains("biasTee")) {
-            biasTee = config.conf["biasTee"];
-        }
-        if (config.conf.contains("offsetTuning")) {
-            offsetTuning = config.conf["offsetTuning"];
-        }
         config.release();
 
         // Update samplerate
@@ -137,21 +121,6 @@ private:
             return;
         }
         
-        // Sync settings
-        _this->client->setFrequency(_this->freq);
-        _this->client->setSampleRate(_this->sampleRate);
-        _this->client->setPPM(_this->ppm);
-        _this->client->setDirectSampling(_this->directSamplingId);
-        _this->client->setAGCMode(_this->rtlAGC);
-        _this->client->setBiasTee(_this->biasTee);
-        _this->client->setOffsetTuning(_this->offsetTuning);
-        if (_this->tunerAGC) {
-            _this->client->setGainMode(0);
-        }
-        else {
-            _this->client->setGainMode(1);
-            _this->client->setGainIndex(_this->gain);
-        }
 
         _this->running = true;
         flog::info("ReadonlyRTLTCPSourceModule '{0}': Start!", _this->name);
@@ -167,11 +136,8 @@ private:
 
     static void tune(double freq, void* ctx) {
         ReadonlyRTLTCPSourceModule* _this = (ReadonlyRTLTCPSourceModule*)ctx;
-        if (_this->running) {
-            _this->client->setFrequency(freq);
-        }
         _this->freq = freq;
-        flog::info("ReadonlyRTLTCPSourceModule '{0}': Tune: {1}!", _this->name, freq);
+        flog::info("Module is not tunable! The frequency here is just for convenience");
     }
 
     static void menuHandler(void* ctx) {
@@ -202,85 +168,6 @@ private:
         }
 
         if (_this->running) { SmGui::EndDisabled(); }
-
-        SmGui::LeftLabel("Direct Sampling");
-        SmGui::FillWidth();
-        if (SmGui::Combo(CONCAT("##_rtltcp_ds_", _this->name), &_this->directSamplingId, "Disabled\0I branch\0Q branch\0")) {
-            if (_this->running) {
-                _this->client->setDirectSampling(_this->directSamplingId);
-                _this->client->setGainIndex(_this->gain);
-            }
-            config.acquire();
-            config.conf["directSamplingMode"] = _this->directSamplingId;
-            config.release(true);
-        }
-
-        SmGui::LeftLabel("PPM Correction");
-        SmGui::FillWidth();
-        if (SmGui::InputInt(CONCAT("##_rtltcp_ppm_", _this->name), &_this->ppm, 1, 10)) {
-            if (_this->running) {
-                _this->client->setPPM(_this->ppm);
-            }
-            config.acquire();
-            config.conf["ppm"] = _this->ppm;
-            config.release(true);
-        }
-
-        if (_this->tunerAGC) { SmGui::BeginDisabled(); }
-        SmGui::LeftLabel("Gain");
-        SmGui::FillWidth();
-        if (SmGui::SliderInt(CONCAT("##_gain_select_", _this->name), &_this->gain, 0, 28, SmGui::FMT_STR_NONE)) {
-            if (_this->running) {
-                _this->client->setGainIndex(_this->gain);
-            }
-            config.acquire();
-            config.conf["gainIndex"] = _this->gain;
-            config.release(true);
-        }
-        if (_this->tunerAGC) { SmGui::EndDisabled(); }
-
-        if (SmGui::Checkbox(CONCAT("Bias-T##_biast_select_", _this->name), &_this->biasTee)) {
-            if (_this->running) {
-                _this->client->setBiasTee(_this->biasTee);
-            }
-            config.acquire();
-            config.conf["biasTee"] = _this->biasTee;
-            config.release(true);
-        }
-
-        if (SmGui::Checkbox(CONCAT("Offset Tuning##_biast_select_", _this->name), &_this->offsetTuning)) {
-            if (_this->running) {
-                _this->client->setOffsetTuning(_this->offsetTuning);
-            }
-            config.acquire();
-            config.conf["offsetTuning"] = _this->offsetTuning;
-            config.release(true);
-        }
-
-        if (SmGui::Checkbox("RTL AGC", &_this->rtlAGC)) {
-            if (_this->running) {
-                _this->client->setAGCMode(_this->rtlAGC);
-                if (!_this->rtlAGC) {
-                    _this->client->setGainIndex(_this->gain);
-                }
-            }
-            config.acquire();
-            config.conf["rtlAGC"] = _this->rtlAGC;
-            config.release(true);
-        }
-
-        SmGui::ForceSync();
-        if (SmGui::Checkbox("Tuner AGC", &_this->tunerAGC)) {
-            if (_this->running) {
-                _this->client->setGainMode(!_this->tunerAGC);
-                if (!_this->tunerAGC) {
-                    _this->client->setGainIndex(_this->gain);
-                }
-            }
-            config.acquire();
-            config.conf["tunerAGC"] = _this->tunerAGC;
-            config.release(true);
-        }
     }
 
     std::string name;

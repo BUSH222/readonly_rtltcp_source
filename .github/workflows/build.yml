@@ -7,106 +7,6 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build_windows:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          submodules: recursive
-
-      - name: Ensure SDR++ Core is present
-        shell: pwsh
-        run: |
-          if (!(Test-Path "lib/SDRPlusPlus/CMakeLists.txt")) {
-            Remove-Item -Recurse -Force lib/SDRPlusPlus -ErrorAction SilentlyContinue
-            git clone https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
-          }
-
-      - name: Create Build Environment
-        run: |
-          cmake -E make_directory ${{ runner.workspace }}/build_sdrpp
-          cmake -E make_directory ${{ runner.workspace }}/build_module
-
-      - name: Install minimal Windows dependencies
-        shell: pwsh
-        run: |
-          Invoke-WebRequest -Uri "https://downloads.myriadrf.org/builds/PothosSDR/PothosSDR-2020.01.26-vc14-x64.exe" -OutFile "$env:RUNNER_WORKSPACE/pothos.exe"
-          New-Item -ItemType Directory -Path "C:/Program Files/PothosSDR" -Force | Out-Null
-          7z x "$env:RUNNER_WORKSPACE/pothos.exe" "-oC:/Program Files/PothosSDR/" | Out-Null
-          vcpkg install fftw3:x64-windows glfw3:x64-windows zstd:x64-windows spdlog:x64-windows
-          if (!(Test-Path "C:/Program Files/PothosSDR/include/volk/volk.h")) {
-            throw "GNU Radio VOLK headers were not found under C:/Program Files/PothosSDR/include/volk"
-          }
-
-      - name: Build SDR++ Core (Minimal)
-        working-directory: ${{ runner.workspace }}/build_sdrpp
-        shell: pwsh
-        run: |
-          $offModules = @(
-            "AIRSPY_SOURCE","AIRSPYHF_SOURCE","AUDIO_SOURCE","BADGESDR_SOURCE","BLADERF_SOURCE","DRAGONLABS_SOURCE",
-            "FILE_SOURCE","FOBOSSDR_SOURCE","HACKRF_SOURCE","HAROGIC_SOURCE","HERMES_SOURCE","HYDRASDR_SOURCE",
-            "KCSDR_SOURCE","LIMESDR_SOURCE","NETWORK_SOURCE","PERSEUS_SOURCE","PLUTOSDR_SOURCE","RFNM_SOURCE",
-            "RFSPACE_SOURCE","RTL_SDR_SOURCE","RTL_TCP_SOURCE","SDDC_SOURCE","SDRPP_SERVER_SOURCE","SDRPLAY_SOURCE",
-            "SOAPY_SOURCE","SPECTRAN_SOURCE","SPECTRAN_HTTP_SOURCE","SPYSERVER_SOURCE","USRP_SOURCE",
-            "ANDROID_AUDIO_SINK","AUDIO_SINK","NETWORK_SINK","NEW_PORTAUDIO_SINK","PORTAUDIO_SINK",
-            "ATV_DECODER","DAB_DECODER","FALCON9_DECODER","KG_SSTV_DECODER","M17_DECODER","METEOR_DEMODULATOR",
-            "PAGER_DECODER","RADIO","RYFI_DECODER","VOR_RECEIVER","WEATHER_SAT_DECODER",
-            "DISCORD_PRESENCE","FREQUENCY_MANAGER","IQ_EXPORTER","RECORDER","RIGCTL_CLIENT","RIGCTL_SERVER","SCANNER","SCHEDULER"
-          )
-
-          $cmakeArgs = @(
-            "-A", "x64",
-            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
-            "-DOPT_BACKEND_GLFW=ON",
-            "-DOPT_BACKEND_ANDROID=OFF"
-          )
-          $cmakeArgs += $offModules | ForEach-Object { "-DOPT_BUILD_$($_)=OFF" }
-          $cmakeArgs += "${{ github.workspace }}/lib/SDRPlusPlus"
-
-          cmake @cmakeArgs
-          cmake --build . --config Release --target sdrpp_core --parallel 3
-
-      - name: Build the better file source module
-        working-directory: ${{ runner.workspace }}/build_module
-        shell: pwsh
-        run: |
-          $coreImportLib = Get-ChildItem -Path "${{ runner.workspace }}/build_sdrpp" -Recurse -Filter "sdrpp_core.lib" | Select-Object -First 1
-          if (-not $coreImportLib) {
-            throw "Could not find sdrpp_core.lib under ${{ runner.workspace }}/build_sdrpp"
-          }
-          $coreLibDir = $coreImportLib.DirectoryName.Replace('\\', '/')
-
-          $coreDll = Get-ChildItem -Path "${{ runner.workspace }}/build_sdrpp" -Recurse -Filter "sdrpp_core.dll" | Select-Object -First 1
-          $coreDllDir = ""
-          if ($coreDll) {
-            $coreDllDir = $coreDll.DirectoryName.Replace('\\', '/')
-          }
-
-          Write-Host "Using sdrpp_core import lib: $($coreImportLib.FullName)"
-
-          $cmakeArgs = @(
-            "-A", "x64",
-            "-DCMAKE_TOOLCHAIN_FILE=C:/vcpkg/scripts/buildsystems/vcpkg.cmake",
-            "-DCMAKE_PREFIX_PATH=C:/vcpkg/installed/x64-windows",
-            "-DSDRPP_CORE_ROOT=${{ github.workspace }}/lib/SDRPlusPlus",
-            "-DSDRPP_CORE_LIB_DIR=$coreLibDir",
-            "-DSDRPP_MODULE_COMPILER_FLAGS=/O2;/Ob2;/std:c++17;/EHsc;/IC:/vcpkg/installed/x64-windows/include;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src;/I${{ github.workspace }}/lib/SDRPlusPlus/core/src/imgui"
-          )
-
-          if ($coreDllDir -ne "") {
-            $cmakeArgs += "-DSDRPP_CORE_DLL_DIR=$coreDllDir"
-          }
-
-          $cmakeArgs += "${{ github.workspace }}"
-          cmake @cmakeArgs
-
-          cmake --build . --config Release --parallel 3
-
-      - name: Save Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: readonly_rtltcp_source_windows_amd64
-          path: ${{ runner.workspace }}/build_module/Release/readonly_rtltcp_source.dll
   build_macos_universal:
     strategy:
       matrix:
@@ -196,7 +96,7 @@ jobs:
           path: ${{runner.workspace}}/build_module/readonly_rtltcp_source.so
 
   update_latest_release:
-    needs: [build_windows, build_macos_universal, build_linux]
+    needs: [build_macos_universal, build_linux]
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     permissions:
@@ -209,7 +109,6 @@ jobs:
       - name: Update Latest Release
         run: |
           mkdir release_files
-          cp readonly_rtltcp_source_windows_amd64/* release_files/readonly_rtltcp_source_windows_amd64.dll
           cp readonly_rtltcp_source_macos-15-intel/* release_files/readonly_rtltcp_source_macos-15-intel.dylib
           cp readonly_rtltcp_source_macos-15/* release_files/readonly_rtltcp_source_macos-15.dylib
           cp readonly_rtltcp_source_linux_amd64/* release_files/readonly_rtltcp_source_linux_amd64.so

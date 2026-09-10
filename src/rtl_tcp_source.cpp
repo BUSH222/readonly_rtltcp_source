@@ -26,52 +26,6 @@ namespace rtltcp {
         stream->clearWriteStop();
     }
 
-    void Client::setFrequency(double freq) {
-        sendCommand(1, freq);
-    }
-
-    void Client::setSampleRate(double sr) {
-        sendCommand(2, sr);
-        bufferSize = sr / 200.0;
-    }
-
-    void Client::setGainMode(int mode) {
-        sendCommand(3, mode);
-    }
-
-    void Client::setGain(double gain) {
-        sendCommand(4, gain);
-    }
-
-    void Client::setPPM(int ppm) {
-        sendCommand(5, (uint32_t)ppm);
-    }
-
-    void Client::setAGCMode(int mode) {
-        sendCommand(8, mode);
-    }
-
-    void Client::setDirectSampling(int mode) {
-        sendCommand(9, mode);
-    }
-
-    void Client::setOffsetTuning(bool enabled) {
-        sendCommand(10, enabled);
-    }
-
-    void Client::setGainIndex(int index) {
-        sendCommand(13, index);
-    }
-
-    void Client::setBiasTee(bool enabled) {
-        sendCommand(14, enabled);
-    }
-
-    void Client::sendCommand(uint8_t command, uint32_t param) {
-        Command cmd = { command, htonl(param) };
-        sock->send((uint8_t*)&cmd, sizeof(Command));
-    }
-
     void Client::worker() {
         uint8_t* buffer = dsp::buffer::alloc<uint8_t>(STREAM_BUFFER_SIZE*2);
 
