@@ -219,7 +219,6 @@ jobs:
             -DOPT_BUILD_SCHEDULER=OFF
 
           cmake --build . --target sdrpp_core --parallel "$(nproc)"
-          cmake --install .
 
       - name: Build Orange Pi Module
         working-directory: build_module_orange_pi
