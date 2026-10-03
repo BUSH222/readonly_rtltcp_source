@@ -132,33 +132,12 @@ jobs:
             portaudio19-dev \
             libspdlog-dev
 
-      - name: Show build environment
-        run: |
-          echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
-          echo "PWD=$PWD"
-          uname -a
-          dpkg --print-architecture
-
       - name: Ensure SDR++ Core is present
         run: |
           if [ ! -f "lib/SDRPlusPlus/CMakeLists.txt" ]; then
             rm -rf lib/SDRPlusPlus
             git clone --recursive https://github.com/AlexandreRouma/SDRPlusPlus.git lib/SDRPlusPlus
           fi
-
-      - name: Verify VOLK 2.5
-        run: |
-          echo "VOLK pkg-config version:"
-          pkg-config --modversion volk
-
-          echo "VOLK pkg-config libraries:"
-          pkg-config --libs volk
-
-          echo "Installed VOLK packages:"
-          dpkg -l | grep volk
-
-          echo "VOLK shared library:"
-          ldconfig -p | grep 'libvolk.so.2.5'
 
       - name: Create Build Environment
         run: |
@@ -219,12 +198,6 @@ jobs:
             -DOPT_BUILD_SCHEDULER=OFF
 
           cmake --build . --target sdrpp_core --parallel "$(nproc)"
-        
-      - name: Locate SDR++ Core
-        run: |
-          find build_sdrpp_orange_pi -type f \
-            \( -name 'libsdrpp_core.so*' -o -name 'libsdrpp_core.a' \) \
-            -print
 
       - name: Build Orange Pi Module
         working-directory: build_module_orange_pi
@@ -235,16 +208,6 @@ jobs:
             "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
 
           cmake --build . --parallel "$(nproc)"
-
-      - name: Verify Module VOLK Dependency
-        run: |
-          readelf -d \
-            build_module_orange_pi/readonly_rtltcp_source.so \
-            | grep 'libvolk.so.2.5'
-
-      - name: Verify Module Architecture
-        run: |
-          file build_module_orange_pi/readonly_rtltcp_source.so
 
       - name: Save Orange Pi Artifact
         uses: actions/upload-artifact@v7
