@@ -110,7 +110,9 @@ jobs:
 
 
   build_orange_pi:
-    runs-on: [self-hosted, Linux, ARM64, orange-pi]
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: ubuntu:22.04
 
     steps:
       - uses: actions/checkout@v6
@@ -126,8 +128,8 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential cmake git pkg-config libfftw3-dev libglfw3-dev libvolk2-bin libvolk2-dev libvolk2.5 libzstd-dev portaudio19-dev libspdlog-dev
+          apt-get update
+          apt-get install -y build-essential cmake git pkg-config libfftw3-dev libglfw3-dev libvolk2-bin libvolk2-dev libvolk2.5 libzstd-dev portaudio19-dev libspdlog-dev
 
       - name: Verify VOLK 2.5
         run: |
