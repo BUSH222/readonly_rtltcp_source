@@ -116,8 +116,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
-        with:
-          submodules: recursive
 
       - name: Ensure SDR++ Core is present
         run: |
