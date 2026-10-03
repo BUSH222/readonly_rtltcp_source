@@ -214,3 +214,26 @@ jobs:
         with:
           name: readonly_rtltcp_source_orange_pi
           path: build_module_orange_pi/readonly_rtltcp_source.so
+
+  update_latest_release:
+    needs: [build_macos_universal, build_linux, build_orange_pi]
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download All Builds
+        uses: actions/download-artifact@v8
+
+      - name: Update Latest Release
+        run: |
+          mkdir release_files
+          cp readonly_rtltcp_source_macos-15-intel/* release_files/readonly_rtltcp_source_macos-15-intel.dylib
+          cp readonly_rtltcp_source_macos-15/* release_files/readonly_rtltcp_source_macos-15.dylib
+          cp readonly_rtltcp_source_linux_amd64/* release_files/readonly_rtltcp_source_linux_amd64.so
+          cp readonly_rtltcp_source_linux_arm64/* release_files/readonly_rtltcp_source_linux_arm64.so
+          cp readonly_rtltcp_source_orange_pi/* release_files/readonly_rtltcp_source_orange_pi.so
+          gh release upload latest --clobber -R ${{github.repository}} release_files/*
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
