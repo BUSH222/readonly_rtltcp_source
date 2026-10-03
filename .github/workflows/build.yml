@@ -132,10 +132,6 @@ jobs:
             portaudio19-dev \
             libspdlog-dev
 
-      - name: Initialize submodules
-        run: |
-          git submodule update --init --recursive
-
       - name: Show build environment
         run: |
           echo "GITHUB_WORKSPACE=$GITHUB_WORKSPACE"
