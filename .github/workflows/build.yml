@@ -229,10 +229,9 @@ jobs:
       - name: Build Orange Pi Module
         working-directory: build_module_orange_pi
         run: |
+          LDFLAGS="-L$GITHUB_WORKSPACE/build_sdrpp_orange_pi/core" \
           cmake .. \
             -DSDRPP_CORE_ROOT=../lib/SDRPlusPlus \
-            -DCMAKE_BUILD_RPATH="$PWD/../build_sdrpp_orange_pi" \
-            -DCMAKE_LIBRARY_PATH="$PWD/../build_sdrpp_orange_pi" \
             "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
 
           cmake --build . --parallel "$(nproc)"
