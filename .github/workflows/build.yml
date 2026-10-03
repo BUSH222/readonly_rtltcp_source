@@ -219,12 +219,20 @@ jobs:
             -DOPT_BUILD_SCHEDULER=OFF
 
           cmake --build . --target sdrpp_core --parallel "$(nproc)"
+        
+      - name: Locate SDR++ Core
+        run: |
+          find build_sdrpp_orange_pi -type f \
+            \( -name 'libsdrpp_core.so*' -o -name 'libsdrpp_core.a' \) \
+            -print
 
       - name: Build Orange Pi Module
         working-directory: build_module_orange_pi
         run: |
           cmake .. \
             -DSDRPP_CORE_ROOT=../lib/SDRPlusPlus \
+            -DCMAKE_BUILD_RPATH="$PWD/../build_sdrpp_orange_pi" \
+            -DCMAKE_LIBRARY_PATH="$PWD/../build_sdrpp_orange_pi" \
             "-DSDRPP_MODULE_COMPILER_FLAGS=-O3;-std=c++17"
 
           cmake --build . --parallel "$(nproc)"
